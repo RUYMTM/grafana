@@ -1,0 +1,63 @@
+#On your computer, build for remote server --------------------------
+#Build and upload docker image
+#in folder: Ewiser\gradle-projects\ewiser-abomination-core
+publish.bat
+
+#--------------------------------------------------------------------
+#On your computer, run in docker, loclahost -------------------------
+
+
+#Build image and run container
+docker build --tag eu.gcr.io/ewiser/ewiser-grafana:1.0.0 .
+
+#After wildfly started, run:
+[ewiser-abomination-core] LOCALHOST docker remote debug (OpenJDK needed)
+
+#--------------------------------------------------------------------
+#On the virtual machine, using ssh ----------------------------------
+
+#Pull new image from registry
+docker pull eu.gcr.io/ewiser/ewiser-grafana:1.0.0
+
+#Remove container  (AFTER the new is working!)
+docker container rm ewiser-grafana-prev
+or
+docker container rm -f ewiser-grafana-prev
+
+#Rename container to prev
+docker rename ewiser-grafana ewiser-grafana-prev
+
+#Create new container
+docker create --restart unless-stopped -p 3000:3000 --name ewiser-grafana \
+--mount type=bind,src=/mnt/disks/data/grafana/logs,target=/var/log/grafana/ \
+--mount type=bind,src=/mnt/disks/data/grafana/data,target=/var/lib/grafana/ \
+--mount type=bind,src=/mnt/disks/data/grafana/cert,target=/var/ssl/ \
+-e GF_LOG_MODE='console file' \
+-e GF_SERVER_PROTOCOL=https \
+-e GF_SERVER_ENABLE_GZIP=true \
+-e GF_SERVER_CERT_FILE=/var/ssl/_.ewiser.hu.pem \
+-e GF_SERVER_CERT_KEY=/var/ssl/_.ewiser.hu.key \
+-e GF_SECURITY_ALLOW_EMBEDDING=TRUE \
+-e GF_AUTH_ANONYMOUS_ENABLED=true \
+-e GF_LIVE_ALLOWED_ORIGINS="https://*.ewiser.hu:3000" \
+eu.gcr.io/ewiser/ewiser-grafana:1.0.1
+
+#Stop running container
+docker container stop ewiser-grafana-prev
+
+#Start container
+docker container start ewiser-grafana
+
+
+#View logs
+
+## all-time log since container is up
+docker logs ewiser-grafana
+
+## all-time log and live-stream from now on
+docker logs --follow ewiser-grafana
+
+## last 100 rows and live-stream from now on
+docker logs --follow --tail 100 ewiser-grafana
+
+#--------------------------------------------------------------------
