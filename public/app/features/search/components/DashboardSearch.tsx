@@ -1,16 +1,14 @@
 import { css } from '@emotion/css';
 import React, { FC, memo } from 'react';
-
 import { GrafanaTheme2 } from '@grafana/data';
 import { CustomScrollbar, IconButton, stylesFactory, useTheme2 } from '@grafana/ui';
-
 import { useDashboardSearch } from '../hooks/useDashboardSearch';
 import { useSearchQuery } from '../hooks/useSearchQuery';
-
 import { ActionRow } from './ActionRow';
 import { PreviewsSystemRequirements } from './PreviewsSystemRequirements';
 import { SearchField } from './SearchField';
 import { SearchResults } from './SearchResults';
+import config from 'app/core/config';
 
 export interface Props {
   onCloseSearch: () => void;
@@ -18,13 +16,15 @@ export interface Props {
 
 export const DashboardSearch: FC<Props> = memo(({ onCloseSearch }) => {
   const { query, onQueryChange, onTagFilterChange, onTagAdd, onSortChange, onLayoutChange } = useSearchQuery({});
-  const { results, loading, onToggleSection, onKeyDown, showPreviews, setShowPreviews } = useDashboardSearch(
+  let { results, loading, onToggleSection, onKeyDown, showPreviews, setShowPreviews } = useDashboardSearch(
     query,
     onCloseSearch
   );
+  if (!config.bootData.user.isSignedIn) {
+    results= []
+  }
   const theme = useTheme2();
   const styles = getStyles(theme);
-
   return (
     <div tabIndex={0} className={styles.overlay}>
       <div className={styles.container}>
