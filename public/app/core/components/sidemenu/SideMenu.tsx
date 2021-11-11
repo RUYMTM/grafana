@@ -18,8 +18,7 @@ export const SideMenu: FC = React.memo(() => {
   const toggleSideMenuSmallBreakpoint = useCallback(() => {
     appEvents.emit(CoreEvents.toggleSidemenuMobile);
   }, []);
-
-  if (kiosk !== null) {
+  if (kiosk !== null || !config.bootData.user.isSignedIn) {
     return null;
   }
 
