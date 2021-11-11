@@ -58,11 +58,7 @@ export class ErrorPage extends PureComponent<Props> {
                     <div>
                       <h3>Sorry for the inconvenience</h3>
                       <p>
-                        Please go back to your{' '}
-                        <a href={config.appSubUrl} className="error-link">
-                          home dashboard
-                        </a>{' '}
-                        and try again.
+                        Please go back to your home dashboard and try again.
                       </p>
                       <p>
                         If the error persists, seek help on the{' '}
