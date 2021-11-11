@@ -15,7 +15,9 @@ const TopSection: FC<any> = () => {
   const onOpenSearch = () => {
     locationService.partial({ search: 'open' });
   };
-
+if(!config.bootData.user.isSignedIn){
+  return null;
+}
   return (
     <div data-testid="top-section-items" className="sidemenu__top">
       <TopSectionItem link={searchLink} onClick={onOpenSearch} />
