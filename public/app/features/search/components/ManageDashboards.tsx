@@ -36,6 +36,7 @@ export const ManageDashboards: FC<Props> = memo(({ folder }) => {
     folderIds: folderId ? [folderId] : [],
     layout: defaultLayout,
   };
+  if (config.bootData.user.isSignedIn) {
 
   const {
     query,
@@ -76,9 +77,7 @@ export const ManageDashboards: FC<Props> = memo(({ folder }) => {
   if (initialLoading) {
     return <Spinner className={styles.spinner} />;
   }
-  if (!config.bootData.user.isSignedIn) {
-    results= []
-  }
+
   if (noFolders && !hasFilters) {
     return (
       <EmptyListCTA
@@ -143,6 +142,9 @@ export const ManageDashboards: FC<Props> = memo(({ folder }) => {
       />
     </div>
   );
+  } else {
+    return null;
+  }
 });
 
 export default ManageDashboards;

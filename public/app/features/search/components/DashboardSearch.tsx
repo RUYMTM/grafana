@@ -8,6 +8,7 @@ import { SearchField } from './SearchField';
 import { SearchResults } from './SearchResults';
 import { ActionRow } from './ActionRow';
 import config from 'app/core/config';
+import {DashboardSection} from "../types";
 
 export interface Props {
   onCloseSearch: () => void;
@@ -15,20 +16,21 @@ export interface Props {
 
 export const DashboardSearch: FC<Props> = memo(({ onCloseSearch }) => {
 
-  const {query, onQueryChange, onTagFilterChange, onTagAdd, onSortChange, onLayoutChange} = useSearchQuery({});
-  let {results, loading, onToggleSection, onKeyDown} = useDashboardSearch(query, onCloseSearch);
-  if (!config.bootData.user.isSignedIn) {
-    results= []
-  }
+if(config.bootData.user.isSignedIn) {
   const theme = useTheme();
   const styles = getStyles(theme);
+  const {query, onQueryChange, onTagFilterChange, onTagAdd, onSortChange, onLayoutChange} = useSearchQuery({});
+
+  const {results, loading, onToggleSection, onKeyDown} = useDashboardSearch(query, onCloseSearch);
+
+
   return (
     <div tabIndex={0} className={styles.overlay}>
       <div className={styles.container}>
         <div className={styles.searchField}>
-          <SearchField query={query} onChange={onQueryChange} onKeyDown={onKeyDown} autoFocus clearable />
+          <SearchField query={query} onChange={onQueryChange} onKeyDown={onKeyDown} autoFocus clearable/>
           <div className={styles.closeBtn}>
-            <IconButton name="times" surface="panel" onClick={onCloseSearch} size="xxl" tooltip="Close search" />
+            <IconButton name="times" surface="panel" onClick={onCloseSearch} size="xxl" tooltip="Close search"/>
           </div>
         </div>
         <div className={styles.search}>
@@ -54,6 +56,9 @@ export const DashboardSearch: FC<Props> = memo(({ onCloseSearch }) => {
       </div>
     </div>
   );
+} else{
+  return null;
+}
 });
 
 DashboardSearch.displayName = 'DashboardSearch';

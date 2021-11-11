@@ -10,6 +10,7 @@ import impressionSrv from 'app/core/services/impression_srv';
 import { DashboardSearchHit } from 'app/features/search/types';
 import { DashListOptions } from './types';
 import { getStyles } from './styles';
+import config from 'app/core/config';
 
 type Dashboard = DashboardSearchHit & { isSearchResult?: boolean; isRecent?: boolean };
 
@@ -77,6 +78,8 @@ async function fetchDashboards(options: DashListOptions, replaceVars: Interpolat
 }
 
 export function DashList(props: PanelProps<DashListOptions>) {
+  if (config.bootData.user.isSignedIn) {
+
   const [dashboards, setDashboards] = useState(new Map<number, Dashboard>());
   useEffect(() => {
     fetchDashboards(props.options, props.replaceVariables).then((dashes) => {
@@ -94,7 +97,7 @@ export function DashList(props: PanelProps<DashListOptions>) {
     setDashboards(updatedDashboards);
   };
 
-  const [starredDashboards, recentDashboards, searchedDashboards] = useMemo(() => {
+  let [starredDashboards, recentDashboards, searchedDashboards] = useMemo(() => {
     const dashboardList = [...dashboards.values()];
     return [
       dashboardList.filter((dash) => dash.isStarred).sort((a, b) => a.title.localeCompare(b.title)),
@@ -153,4 +156,7 @@ export function DashList(props: PanelProps<DashListOptions>) {
       )}
     </CustomScrollbar>
   );
+  } else{
+    return null;
+  }
 }
