@@ -8,7 +8,7 @@ import { Branding } from 'app/core/components/Branding/Branding';
 import { Icon } from '@grafana/ui';
 import { useLocation } from 'react-router-dom';
 
-const homeUrl = config.appSubUrl || '/';
+const homeUrl = config.bootData.user.isSignedIn? config.appSubUrl || '/' : '/login';
 
 export const SideMenu: FC = React.memo(() => {
   const location = useLocation();
