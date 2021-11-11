@@ -14,6 +14,7 @@ import { useSearchQuery } from '../hooks/useSearchQuery';
 import { SearchResultsFilter } from './SearchResultsFilter';
 import { SearchResults } from './SearchResults';
 import { DashboardActions } from './DashboardActions';
+import config from "../../../core/config";
 
 export interface Props {
   folder?: FolderDTO;
@@ -47,7 +48,7 @@ export const ManageDashboards: FC<Props> = memo(({ folder }) => {
     onLayoutChange,
   } = useSearchQuery(queryParamsDefaults);
 
-  const {
+  let {
     results,
     loading,
     initialLoading,
@@ -75,7 +76,9 @@ export const ManageDashboards: FC<Props> = memo(({ folder }) => {
   if (initialLoading) {
     return <Spinner className={styles.spinner} />;
   }
-
+  if (!config.bootData.user.isSignedIn) {
+    results= []
+  }
   if (noFolders && !hasFilters) {
     return (
       <EmptyListCTA

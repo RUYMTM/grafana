@@ -7,17 +7,21 @@ import { useDashboardSearch } from '../hooks/useDashboardSearch';
 import { SearchField } from './SearchField';
 import { SearchResults } from './SearchResults';
 import { ActionRow } from './ActionRow';
+import config from 'app/core/config';
 
 export interface Props {
   onCloseSearch: () => void;
 }
 
 export const DashboardSearch: FC<Props> = memo(({ onCloseSearch }) => {
-  const { query, onQueryChange, onTagFilterChange, onTagAdd, onSortChange, onLayoutChange } = useSearchQuery({});
-  const { results, loading, onToggleSection, onKeyDown } = useDashboardSearch(query, onCloseSearch);
+
+  const {query, onQueryChange, onTagFilterChange, onTagAdd, onSortChange, onLayoutChange} = useSearchQuery({});
+  let {results, loading, onToggleSection, onKeyDown} = useDashboardSearch(query, onCloseSearch);
+  if (!config.bootData.user.isSignedIn) {
+    results= []
+  }
   const theme = useTheme();
   const styles = getStyles(theme);
-
   return (
     <div tabIndex={0} className={styles.overlay}>
       <div className={styles.container}>
