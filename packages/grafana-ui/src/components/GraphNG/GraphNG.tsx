@@ -68,7 +68,7 @@ function sameProps(prevProps: any, nextProps: any, propsToDiff: Array<string | P
  */
 export interface GraphNGState {
   alignedFrame: DataFrame;
-  alignedData: AlignedData;
+  alignedData?: AlignedData;
   config?: UPlotConfigBuilder;
 }
 
@@ -84,7 +84,9 @@ export class GraphNG extends React.Component<GraphNGProps, GraphNGState> {
 
   constructor(props: GraphNGProps) {
     super(props);
-    this.state = this.prepState(props);
+    let state = this.prepState(props);
+    state.alignedData = state.config!.prepData!([state.alignedFrame]) as AlignedData;
+    this.state = state;
     this.plotInstance = React.createRef();
   }
 
@@ -116,7 +118,6 @@ export class GraphNG extends React.Component<GraphNGProps, GraphNGState> {
 
       state = {
         alignedFrame,
-        alignedData: config!.prepData!(alignedFrame),
         config,
       };
 
@@ -196,12 +197,13 @@ export class GraphNG extends React.Component<GraphNGProps, GraphNGState> {
 
         if (shouldReconfig) {
           newState.config = this.props.prepConfig(newState.alignedFrame, this.props.frames, this.getTimeRange);
-          newState.alignedData = newState.config.prepData!(newState.alignedFrame);
           pluginLog('GraphNG', false, 'config recreated', newState.config);
         }
-      }
 
-      newState && this.setState(newState);
+        newState.alignedData = newState.config!.prepData!([newState.alignedFrame]) as AlignedData;
+
+        this.setState(newState);
+      }
     }
   }
 
@@ -222,7 +224,7 @@ export class GraphNG extends React.Component<GraphNGProps, GraphNGState> {
         {(vizWidth: number, vizHeight: number) => (
           <UPlotChart
             config={this.state.config!}
-            data={this.state.alignedData}
+            data={this.state.alignedData!}
             width={vizWidth}
             height={vizHeight}
             timeRange={timeRange}

@@ -23,8 +23,9 @@ import {
   PointVisibility,
   ScaleDirection,
   ScaleOrientation,
-} from '../uPlot/config';
-import { collectStackingGroups, preparePlotData } from '../uPlot/utils';
+  StackingMode,
+} from '@grafana/schema';
+import { getStackingGroups, preparePlotData2 } from '../uPlot/utils';
 import uPlot from 'uplot';
 
 const defaultFormatter = (v: any) => (v == null ? '-' : v.toFixed(1));
@@ -35,7 +36,9 @@ const defaultConfig: GraphFieldConfig = {
   axisPlacement: AxisPlacement.Auto,
 };
 
-export const preparePlotConfigBuilder: UPlotConfigPrepFn<{ sync: DashboardCursorSync }> = ({
+export const preparePlotConfigBuilder: UPlotConfigPrepFn<{
+  sync?: () => DashboardCursorSync;
+}> = ({
   frame,
   theme,
   timeZone,
@@ -43,10 +46,13 @@ export const preparePlotConfigBuilder: UPlotConfigPrepFn<{ sync: DashboardCursor
   eventBus,
   sync,
   allFrames,
+  renderers,
+  tweakScale = (opts) => opts,
+  tweakAxis = (opts) => opts,
 }) => {
   const builder = new UPlotConfigBuilder(timeZone);
 
-  builder.setPrepData(preparePlotData);
+  builder.setPrepData((frames) => preparePlotData2(frames[0], builder.getStackingGroups()));
 
   // X is the first field in the aligned frame
   const xField = frame.fields[0];
@@ -98,8 +104,6 @@ export const preparePlotConfigBuilder: UPlotConfigPrepFn<{ sync: DashboardCursor
       theme,
     });
   }
-
-  const stackingGroups: Map<string, number[]> = new Map();
 
   let indexByName: Map<string, number> | undefined;
 
@@ -256,19 +260,26 @@ export const preparePlotConfigBuilder: UPlotConfigPrepFn<{ sync: DashboardCursor
         });
       }
     }
-    collectStackingGroups(field, stackingGroups, seriesIndex);
   }
 
-  if (stackingGroups.size !== 0) {
-    builder.setStacking(true);
-    for (const [_, seriesIdxs] of stackingGroups.entries()) {
-      for (let j = seriesIdxs.length - 1; j > 0; j--) {
-        builder.addBand({
-          series: [seriesIdxs[j], seriesIdxs[j - 1]],
-        });
-      }
+  let stackingGroups = getStackingGroups(frame);
+
+  builder.setStackingGroups(stackingGroups);
+
+  // hook up custom/composite renderers
+  renderers?.forEach((r) => {
+    if (!indexByName) {
+      indexByName = getNamesToFieldIndex(frame, allFrames);
     }
-  }
+    let fieldIndices: Record<string, number> = {};
+
+    for (let key in r.fieldMap) {
+      let dispName = r.fieldMap[key];
+      fieldIndices[key] = indexByName.get(dispName)!;
+    }
+
+    r.init(builder, fieldIndices);
+  });
 
   builder.scaleKeys = [xScaleKey, yScaleKey];
 

@@ -10,8 +10,12 @@ import {
   BarValueVisibility,
   ScaleDirection,
   ScaleOrientation,
-} from '@grafana/ui';
-import { preparePlotData } from '../../../../../packages/grafana-ui/src/components/uPlot/utils';
+  VizTextDisplayOptions,
+  VizLegendOptions,
+} from '@grafana/schema';
+import { preparePlotData2, StackingGroup } from '../../../../../packages/grafana-ui/src/components/uPlot/utils';
+import { alpha } from '@grafana/data/src/themes/colorManipulator';
+import { formatTime } from '@grafana/ui/src/components/uPlot/config/UPlotAxisBuilder';
 
 const groupDistr = SPACE_BETWEEN;
 const barDistr = SPACE_BETWEEN;
@@ -311,10 +315,9 @@ export function getConfig(opts: BarsOptions, theme: GrafanaTheme2) {
 
   let alignedTotals: AlignedData | null = null;
 
-  function prepData(alignedFrame: DataFrame) {
+  function prepData(frames: DataFrame[], stackingGroups: StackingGroup[]) {
     alignedTotals = null;
-
-    return preparePlotData(alignedFrame, ({ totals }) => {
+    return preparePlotData2(frames[0], stackingGroups, ({ totals }) => {
       alignedTotals = totals;
     });
   }

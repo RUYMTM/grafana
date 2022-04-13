@@ -1,8 +1,9 @@
-import { DataFrame, dateTime, Field, FieldType } from '@grafana/data';
-import { StackingMode } from './config';
-import { createLogger } from '../../utils/logger';
+import { DataFrame, ensureTimeField, FieldType } from '@grafana/data';
+import { BarAlignment, GraphDrawStyle, GraphTransform, LineInterpolation, StackingMode } from '@grafana/schema';
+import uPlot, { AlignedData, Options, PaddingSide } from 'uplot';
 import { attachDebugger } from '../../utils';
-import { AlignedData, Options, PaddingSide } from 'uplot';
+import { createLogger } from '../../utils/logger';
+import { buildScaleKey } from '../GraphNG/utils';
 
 const ALLOWED_FORMAT_STRINGS_REGEX = /\b(YYYY|YY|MMMM|MMM|MM|M|DD|D|WWWW|WWW|HH|H|h|AA|aa|a|mm|m|ss|s|fff)\b/g;
 
@@ -39,99 +40,225 @@ interface StackMeta {
 }
 
 /** @internal */
-export function preparePlotData(frame: DataFrame, onStackMeta?: (meta: StackMeta) => void): AlignedData {
-  const result: any[] = [];
-  const stackingGroups: Map<string, number[]> = new Map();
-  let seriesIndex = 0;
+export interface StackingGroup {
+  series: number[];
+  dir: StackDirection;
+}
 
-  for (let i = 0; i < frame.fields.length; i++) {
-    const f = frame.fields[i];
+/** @internal */
+const enum StackDirection {
+  Pos = 1,
+  Neg = -1,
+}
 
-    if (f.type === FieldType.time) {
-      if (f.values.length > 0 && typeof f.values.get(0) === 'string') {
-        const timestamps = [];
-        for (let i = 0; i < f.values.length; i++) {
-          timestamps.push(dateTime(f.values.get(i)).valueOf());
-        }
-        result.push(timestamps);
-        seriesIndex++;
-        continue;
-      }
-      result.push(f.values.toArray());
-      seriesIndex++;
-      continue;
+// generates bands between adjacent group series
+/** @internal */
+export function getStackingBands(group: StackingGroup) {
+  let bands: uPlot.Band[] = [];
+  let { series, dir } = group;
+  let lastIdx = series.length - 1;
+
+  let rSeries = series.slice().reverse();
+
+  rSeries.forEach((si, i) => {
+    if (i !== lastIdx) {
+      let nextIdx = rSeries[i + 1];
+      bands.push({
+        series: [si, nextIdx],
+        // fill direction is inverted from stack direction
+        dir: (-1 * dir) as 1 | -1,
+      });
+    }
+  });
+
+  return bands;
+}
+
+// expects an AlignedFrame
+/** @internal */
+export function getStackingGroups(frame: DataFrame) {
+  let groups: Map<string, StackingGroup> = new Map();
+
+  frame.fields.forEach(({ config, values }, i) => {
+    // skip x or time field
+    if (i === 0) {
+      return;
     }
 
-    collectStackingGroups(f, stackingGroups, seriesIndex);
-    result.push(f.values.toArray());
-    seriesIndex++;
-  }
+    let { custom } = config;
 
-  // Stacking
-  if (stackingGroups.size !== 0) {
-    const byPct = frame.fields[1].config.custom?.stacking?.mode === StackingMode.Percent;
-    const dataLength = result[0].length;
-    const alignedTotals = Array(stackingGroups.size);
-    alignedTotals[0] = null;
+    if (custom == null) {
+      return;
+    }
 
-    // array or stacking groups
-    for (const [_, seriesIdxs] of stackingGroups.entries()) {
-      const groupTotals = byPct ? Array(dataLength).fill(0) : null;
+    // TODO: currently all AlignedFrame fields end up in uplot series & data, even custom.hideFrom?.viz
+    // ideally hideFrom.viz fields would be excluded so we can remove this
+    if (custom.hideFrom?.viz) {
+      return;
+    }
 
-      if (byPct) {
-        for (let j = 0; j < seriesIdxs.length; j++) {
-          const currentlyStacking = result[seriesIdxs[j]];
+    let { stacking } = custom;
 
-          for (let k = 0; k < dataLength; k++) {
-            const v = currentlyStacking[k];
-            groupTotals![k] += v == null ? 0 : +v;
+    if (stacking == null) {
+      return;
+    }
+
+    let { mode: stackingMode, group: stackingGroup } = stacking;
+
+    // not stacking
+    if (stackingMode === StackingMode.None) {
+      return;
+    }
+
+    // will this be stacked up or down after any transforms applied
+    let vals = values.toArray();
+    let transform = custom.transform;
+    let stackDir =
+      transform === GraphTransform.Constant
+        ? vals[0] > 0
+          ? StackDirection.Pos
+          : StackDirection.Neg
+        : transform === GraphTransform.NegativeY
+        ? vals.some((v) => v > 0)
+          ? StackDirection.Neg
+          : StackDirection.Pos
+        : vals.some((v) => v > 0)
+        ? StackDirection.Pos
+        : StackDirection.Neg;
+
+    let drawStyle = custom.drawStyle as GraphDrawStyle;
+    let drawStyle2 =
+      drawStyle === GraphDrawStyle.Bars
+        ? (custom.barAlignment as BarAlignment)
+        : drawStyle === GraphDrawStyle.Line
+        ? (custom.lineInterpolation as LineInterpolation)
+        : null;
+
+    let stackKey = `${stackDir}|${stackingMode}|${stackingGroup}|${buildScaleKey(config)}|${drawStyle}|${drawStyle2}`;
+
+    let group = groups.get(stackKey);
+
+    if (group == null) {
+      group = {
+        series: [],
+        dir: stackDir,
+      };
+
+      groups.set(stackKey, group);
+    }
+
+    group.series.push(i);
+  });
+
+  return [...groups.values()];
+}
+
+/** @internal */
+export function preparePlotData2(
+  frame: DataFrame,
+  stackingGroups: StackingGroup[],
+  onStackMeta?: (meta: StackMeta) => void
+) {
+  let data = Array(frame.fields.length) as AlignedData;
+
+  let dataLen = frame.length;
+  let zeroArr = Array(dataLen).fill(0);
+  let accums = Array.from({ length: stackingGroups.length }, () => zeroArr.slice());
+
+  frame.fields.forEach((field, i) => {
+    let vals = field.values.toArray();
+
+    if (i === 0) {
+      if (field.type === FieldType.time) {
+        data[i] = ensureTimeField(field).values.toArray();
+      } else {
+        data[i] = vals;
+      }
+      return;
+    }
+
+    let { custom } = field.config;
+
+    if (!custom || custom.hideFrom?.viz) {
+      data[i] = vals;
+      return;
+    }
+
+    // apply transforms
+    if (custom.transform === GraphTransform.Constant) {
+      vals = Array(vals.length).fill(vals[0]);
+    } else {
+      vals = vals.slice();
+
+      if (custom.transform === GraphTransform.NegativeY) {
+        for (let i = 0; i < vals.length; i++) {
+          if (vals[i] != null) {
+            vals[i] *= -1;
           }
         }
       }
+    }
 
-      const acc = Array(dataLength).fill(0);
+    let stackingMode = custom.stacking?.mode;
 
-      for (let j = 0; j < seriesIdxs.length; j++) {
-        let seriesIdx = seriesIdxs[j];
+    if (!stackingMode || stackingMode === StackingMode.None) {
+      data[i] = vals;
+    } else {
+      let stackIdx = stackingGroups.findIndex((group) => group.series.indexOf(i) > -1);
 
-        alignedTotals[seriesIdx] = groupTotals;
+      let accum = accums[stackIdx];
+      let stacked = (data[i] = Array(dataLen));
 
-        const currentlyStacking = result[seriesIdx];
+      for (let i = 0; i < dataLen; i++) {
+        let v = vals[i];
 
-        for (let k = 0; k < dataLength; k++) {
-          const v = currentlyStacking[k];
-          acc[k] += v == null ? 0 : v / (byPct ? groupTotals![k] : 1);
+        if (v != null) {
+          stacked[i] = accum[i] += v;
+        } else {
+          stacked[i] = v; // we may want to coerce to 0 here
         }
-
-        result[seriesIdx] = acc.slice();
       }
     }
+  });
 
-    onStackMeta &&
-      onStackMeta({
-        totals: alignedTotals as AlignedData,
-      });
+  if (onStackMeta) {
+    let accumsBySeriesIdx = data.map((vals, i) => {
+      let stackIdx = stackingGroups.findIndex((group) => group.series.indexOf(i) > -1);
+      return stackIdx !== -1 ? accums[stackIdx] : vals;
+    });
+
+    onStackMeta({
+      totals: accumsBySeriesIdx as AlignedData,
+    });
   }
 
-  return result as AlignedData;
-}
-
-export function collectStackingGroups(f: Field, groups: Map<string, number[]>, seriesIdx: number) {
-  const customConfig = f.config.custom;
-  if (!customConfig) {
-    return;
-  }
-  if (
-    customConfig.stacking?.mode !== StackingMode.None &&
-    customConfig.stacking?.group &&
-    !customConfig.hideFrom?.viz
-  ) {
-    if (!groups.has(customConfig.stacking.group)) {
-      groups.set(customConfig.stacking.group, [seriesIdx]);
-    } else {
-      groups.set(customConfig.stacking.group, groups.get(customConfig.stacking.group)!.concat(seriesIdx));
+  // re-compute by percent
+  frame.fields.forEach((field, i) => {
+    if (i === 0 || field.config.custom?.hideFrom?.viz) {
+      return;
     }
-  }
+
+    let stackingMode = field.config.custom?.stacking?.mode;
+
+    if (stackingMode === StackingMode.Percent) {
+      let stackIdx = stackingGroups.findIndex((group) => group.series.indexOf(i) > -1);
+      let accum = accums[stackIdx];
+      let group = stackingGroups[stackIdx];
+
+      let stacked = data[i];
+
+      for (let i = 0; i < dataLen; i++) {
+        let v = stacked[i];
+
+        if (v != null) {
+          // v / accum will always be pos, so properly (re)sign by group stacking dir
+          stacked[i] = group.dir * (v / accum[i]);
+        }
+      }
+    }
+  });
+
+  return data;
 }
 
 /**

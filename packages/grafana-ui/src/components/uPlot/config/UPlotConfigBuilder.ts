@@ -13,8 +13,8 @@ import { PlotConfig, PlotTooltipInterpolator } from '../types';
 import { ScaleProps, UPlotScaleBuilder } from './UPlotScaleBuilder';
 import { SeriesProps, UPlotSeriesBuilder } from './UPlotSeriesBuilder';
 import { AxisProps, UPlotAxisBuilder } from './UPlotAxisBuilder';
-import { AxisPlacement } from '../config';
-import { pluginLog } from '../utils';
+import { AxisPlacement } from '@grafana/schema';
+import { getStackingBands, pluginLog, StackingGroup } from '../utils';
 import { getThresholdsDrawHook, UPlotThresholdOptions } from './UPlotThresholds';
 
 const cursorDefaults: Cursor = {
@@ -31,13 +31,15 @@ const cursorDefaults: Cursor = {
   },
 };
 
-type PrepData = (frame: DataFrame) => AlignedData;
+type PrepData = (frames: DataFrame[]) => AlignedData | FacetedData;
+type PreDataStacked = (frames: DataFrame[], stackingGroups: StackingGroup[]) => AlignedData | FacetedData;
 
 export class UPlotConfigBuilder {
   private series: UPlotSeriesBuilder[] = [];
   private axes: Record<string, UPlotAxisBuilder> = {};
   private scales: UPlotScaleBuilder[] = [];
   private bands: Band[] = [];
+  private stackingGroups: StackingGroup[] = [];
   private cursor: Cursor | undefined;
   private isStacking = false;
   private select: uPlot.Select | undefined;
@@ -147,6 +149,14 @@ export class UPlotConfigBuilder {
     this.bands.push(band);
   }
 
+  setStackingGroups(groups: StackingGroup[]) {
+    this.stackingGroups = groups;
+  }
+
+  getStackingGroups() {
+    return this.stackingGroups;
+  }
+
   setTooltipInterpolator(interpolator: PlotTooltipInterpolator) {
     this.tooltipInterpolator = interpolator;
   }
@@ -155,10 +165,10 @@ export class UPlotConfigBuilder {
     return this.tooltipInterpolator;
   }
 
-  setPrepData(prepData: PrepData) {
-    this.prepData = (frame) => {
-      this.frame = frame;
-      return prepData(frame);
+  setPrepData(prepData: PreDataStacked) {
+    this.prepData = (frames) => {
+      this.frames = frames;
+      return prepData(frames, this.getStackingGroups());
     };
   }
 
@@ -210,8 +220,15 @@ export class UPlotConfigBuilder {
 
     config.tzDate = this.tzDate;
 
-    if (this.isStacking) {
-      // Let uPlot handle bands and fills
+    if (this.stackingGroups.length) {
+      this.stackingGroups.forEach((group) => {
+        getStackingBands(group).forEach((band) => {
+          this.addBand(band);
+        });
+      });
+    }
+
+    if (this.bands.length) {
       config.bands = this.bands;
     } else {
       // When fillBelowTo option enabled, handle series bands fill manually
