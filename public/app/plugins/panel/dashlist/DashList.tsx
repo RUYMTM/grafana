@@ -14,6 +14,7 @@ import { DashboardSearchHit } from 'app/features/search/types';
 
 import { PanelLayout, PanelOptions } from './models.gen';
 import { getStyles } from './styles';
+import config from 'app/core/config';
 
 type Dashboard = DashboardSearchHit & { isSearchResult?: boolean; isRecent?: boolean };
 
@@ -81,6 +82,7 @@ async function fetchDashboards(options: PanelOptions, replaceVars: InterpolateFu
 }
 
 export function DashList(props: PanelProps<PanelOptions>) {
+  if (config.bootData.user.isSignedIn) {
   const [dashboards, setDashboards] = useState(new Map<number, Dashboard>());
   useEffect(() => {
     fetchDashboards(props.options, props.replaceVariables).then((dashes) => {
@@ -98,7 +100,7 @@ export function DashList(props: PanelProps<PanelOptions>) {
     setDashboards(updatedDashboards);
   };
 
-  const [starredDashboards, recentDashboards, searchedDashboards] = useMemo(() => {
+    const [starredDashboards, recentDashboards, searchedDashboards] = useMemo(() => {
     const dashboardList = [...dashboards.values()];
     return [
       dashboardList.filter((dash) => dash.isStarred).sort((a, b) => a.title.localeCompare(b.title)),
@@ -177,6 +179,9 @@ export function DashList(props: PanelProps<PanelOptions>) {
       )}
     </CustomScrollbar>
   );
+  } else{
+    return null;
+  }
 }
 
 interface IconToggleProps extends Partial<IconProps> {

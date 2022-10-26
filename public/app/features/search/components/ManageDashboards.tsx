@@ -37,7 +37,7 @@ export const ManageDashboards: FC<Props> = memo(({ folder }) => {
     folderIds: folderId ? [folderId] : [],
     layout: defaultLayout,
   };
-
+  if (config.bootData.user.isSignedIn) {
   const {
     query,
     hasFilters,
@@ -147,6 +147,9 @@ export const ManageDashboards: FC<Props> = memo(({ folder }) => {
       />
     </div>
   );
+  } else {
+    return null;
+  }
 });
 
 ManageDashboards.displayName = 'ManageDashboards';

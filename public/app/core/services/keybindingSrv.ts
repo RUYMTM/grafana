@@ -34,15 +34,15 @@ export class KeybindingSrv {
 
   initGlobals() {
     if (locationService.getLocation().pathname !== '/login') {
-      this.bind(['?', 'h'], this.showHelpModal);
-      this.bind('g h', this.goToHome);
-      this.bind('g a', this.openAlerting);
-      this.bind('g p', this.goToProfile);
-      this.bind('s o', this.openSearch);
-      this.bind('t a', this.makeAbsoluteTime);
-      this.bind('f', this.openSearch);
-      this.bind('esc', this.exit);
-      this.bindGlobal('esc', this.globalEsc);
+      // this.bind(['?', 'h'], this.showHelpModal);
+      // this.bind('g h', this.goToHome);
+      // this.bind('g a', this.openAlerting);
+      // this.bind('g p', this.goToProfile);
+      // this.bind('s o', this.openSearch);
+      // this.bind('t a', this.makeAbsoluteTime);
+      // this.bind('f', this.openSearch);
+      // this.bind('esc', this.exit);
+      // this.bindGlobal('esc', this.globalEsc);
     }
 
     this.bind('t t', () => toggleTheme(false));

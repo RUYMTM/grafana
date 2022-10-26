@@ -1,11 +1,8 @@
 ARG GRAFANA_VERSION="latest"
 
-FROM grafana/grafana:${GRAFANA_VERSION}-ubuntu
+FROM grafana/grafana:${GRAFANA_VERSION}
 
 USER root
-
-# Set DEBIAN_FRONTEND=noninteractive in environment at build-time
-ARG DEBIAN_FRONTEND=noninteractive
 
 ARG GF_INSTALL_IMAGE_RENDERER_PLUGIN="false"
 
@@ -16,19 +13,18 @@ RUN mkdir -p "$GF_PATHS_PLUGINS" && \
     chown -R grafana:${GF_GID} "$GF_PATHS_PLUGINS"
 
 RUN if [ $GF_INSTALL_IMAGE_RENDERER_PLUGIN = "true" ]; then \
-    apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y gdebi-core && \
-    cd /tmp && \
-    curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    gdebi --n google-chrome-stable_current_amd64.deb && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*; \
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
+    apk --no-cache  upgrade && \
+    apk add --no-cache udev ttf-opensans chromium && \
+    rm -rf /tmp/* && \
+    rm -rf /usr/share/grafana/tools/phantomjs; \
 fi
 
 USER grafana
 
-ENV GF_PLUGIN_RENDERING_CHROME_BIN="/usr/bin/google-chrome"
+ENV GF_PLUGIN_RENDERING_CHROME_BIN="/usr/bin/chromium-browser"
 
 RUN if [ $GF_INSTALL_IMAGE_RENDERER_PLUGIN = "true" ]; then \
     grafana-cli \

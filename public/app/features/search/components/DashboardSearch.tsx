@@ -11,6 +11,7 @@ import { ActionRow } from './ActionRow';
 import { PreviewsSystemRequirements } from './PreviewsSystemRequirements';
 import { SearchField } from './SearchField';
 import { SearchResults } from './SearchResults';
+import config from 'app/core/config';
 
 export interface Props {
   onCloseSearch: () => void;
@@ -18,10 +19,13 @@ export interface Props {
 
 export const DashboardSearch: FC<Props> = memo(({ onCloseSearch }) => {
   const { query, onQueryChange, onTagFilterChange, onTagAdd, onSortChange, onLayoutChange } = useSearchQuery({});
-  const { results, loading, onToggleSection, onKeyDown, showPreviews, setShowPreviews } = useDashboardSearch(
+  let { results, loading, onToggleSection, onKeyDown, showPreviews, setShowPreviews } = useDashboardSearch(
     query,
     onCloseSearch
   );
+  if (!config.bootData.user.isSignedIn) {
+    results= []
+  }
   const theme = useTheme2();
   const styles = getStyles(theme);
 
