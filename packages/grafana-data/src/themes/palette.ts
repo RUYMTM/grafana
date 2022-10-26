@@ -4,7 +4,7 @@ export const palette = {
 
   gray25: '#2c3235',
   gray15: '#22252b', //'#202226',
-  gray10: '#181b1f', // old '#141619',
+  gray10: '#27293D', // old '#27293D',
   gray05: '#111217', // old '#0b0c0e',
 
   // new from figma,
