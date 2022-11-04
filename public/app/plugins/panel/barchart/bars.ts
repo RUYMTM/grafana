@@ -10,7 +10,6 @@ import {
   BarValueVisibility,
   ScaleDirection,
   ScaleOrientation,
-  VizTextDisplayOptions,
   VizLegendOptions,
 } from '@grafana/schema';
 import { preparePlotData2, StackingGroup } from '../../../../../packages/grafana-ui/src/components/uPlot/utils';

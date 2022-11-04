@@ -46,7 +46,7 @@ export interface StackingGroup {
 }
 
 /** @internal */
-const enum StackDirection {
+enum StackDirection {
   Pos = 1,
   Neg = -1,
 }

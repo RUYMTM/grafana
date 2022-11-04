@@ -24,7 +24,7 @@ import {
   ScaleDirection,
   ScaleOrientation,
   StackingMode,
-} from '@grafana/schema';
+} from '@grafana/slate-react';
 import { getStackingGroups, preparePlotData2 } from '../uPlot/utils';
 import uPlot from 'uplot';
 
