@@ -13,6 +13,7 @@ import { getDashboardSrv } from 'app/features/dashboard/services/DashboardSrv';
 import { SearchCard } from 'app/features/search/components/SearchCard';
 import { DashboardSearchItem } from 'app/features/search/types';
 import { useDispatch } from 'app/types';
+import config from 'app/core/config';
 
 import { PanelLayout, PanelOptions } from './models.gen';
 import { getStyles } from './styles';
@@ -90,6 +91,7 @@ async function fetchDashboards(options: PanelOptions, replaceVars: InterpolateFu
 }
 
 export function DashList(props: PanelProps<PanelOptions>) {
+  if (config.bootData.user.isSignedIn) {
   const [dashboards, setDashboards] = useState(new Map<string, Dashboard>());
   const dispatch = useDispatch();
   useEffect(() => {
@@ -190,6 +192,9 @@ export function DashList(props: PanelProps<PanelOptions>) {
       )}
     </CustomScrollbar>
   );
+  } else{
+    return null;
+  }
 }
 
 interface IconToggleProps extends Partial<IconProps> {

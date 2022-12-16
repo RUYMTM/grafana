@@ -27,7 +27,7 @@ export const MegaMenu = React.memo<Props>(({ onClose, searchBarHidden }) => {
     {
       id: 'home',
       text: 'Home',
-      url: config.appSubUrl || '/',
+      url: config.bootData.user.isSignedIn ? config.appSubUrl || '/' : '/login',
       icon: 'home-alt',
     },
     true

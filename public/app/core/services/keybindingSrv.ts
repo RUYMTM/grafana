@@ -34,14 +34,14 @@ export class KeybindingSrv {
     Mousetrap.reset();
 
     if (this.locationService.getLocation().pathname !== '/login') {
-      this.bind(['?', 'h'], this.showHelpModal);
-      this.bind('g h', this.goToHome);
-      this.bind('g a', this.openAlerting);
-      this.bind('g p', this.goToProfile);
-      this.bind('s o', this.openSearch);
-      this.bind('t a', this.makeAbsoluteTime);
-      this.bind('f', this.openSearch);
-      this.bind('esc', this.exit);
+      //this.bind(['?', 'h'], this.showHelpModal);
+      //this.bind('g h', this.goToHome);
+      //this.bind('g a', this.openAlerting);
+      //this.bind('g p', this.goToProfile);
+      //this.bind('s o', this.openSearch);
+      //this.bind('t a', this.makeAbsoluteTime);
+      //this.bind('f', this.openSearch);
+      //this.bind('esc', this.exit);
       this.bindGlobalEsc();
     }
 
@@ -49,7 +49,7 @@ export class KeybindingSrv {
     this.bind('t r', () => toggleTheme(true));
 
     if (process.env.NODE_ENV === 'development') {
-      this.bind('t n', () => this.toggleNav());
+     // this.bind('t n', () => this.toggleNav());
     }
   }
 

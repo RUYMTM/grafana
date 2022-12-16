@@ -14,8 +14,9 @@ import { SearchView } from '../page/components/SearchView';
 export interface Props {}
 
 export function DashboardSearch({}: Props) {
+  if(config.bootData.user.isSignedIn) {
   const styles = useStyles2(getStyles);
-  const { query, onQueryChange, onCloseSearch } = useSearchQuery({});
+  const {query, onQueryChange, onCloseSearch} = useSearchQuery({});
 
   let [includePanels, setIncludePanels] = useLocalStorage<boolean>(SEARCH_PANELS_LOCAL_STORAGE_KEY, true);
   if (!config.featureToggles.panelTitleSearch) {
@@ -26,7 +27,7 @@ export function DashboardSearch({}: Props) {
     onQueryChange(e.currentTarget.value);
   };
 
-  const { onKeyDown, keyboardEvents } = useKeyNavigationListener();
+  const {onKeyDown, keyboardEvents} = useKeyNavigationListener();
 
   return (
     <div tabIndex={0} className={styles.overlay}>
@@ -47,7 +48,7 @@ export function DashboardSearch({}: Props) {
           </div>
 
           <div className={styles.closeBtn}>
-            <IconButton name="times" onClick={onCloseSearch} size="xxl" tooltip="Close search" />
+            <IconButton name="times" onClick={onCloseSearch} size="xxl" tooltip="Close search"/>
           </div>
         </div>
         <div className={styles.search}>
@@ -61,6 +62,10 @@ export function DashboardSearch({}: Props) {
       </div>
     </div>
   );
+}
+else{
+    return null;
+  }
 }
 
 const getStyles = stylesFactory((theme: GrafanaTheme2) => {

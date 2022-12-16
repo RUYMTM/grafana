@@ -12,7 +12,7 @@ export const commonColorsPalette = {
   gray33: '#464c54',
   gray25: '#2c3235',
   gray15: '#202226',
-  gray10: '#141619',
+  gray10: '#27293D',
   gray05: '#0b0c0e',
 
   // New blues palette used by next-gen form elements

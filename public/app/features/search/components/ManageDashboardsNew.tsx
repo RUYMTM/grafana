@@ -20,6 +20,7 @@ export interface Props {
 }
 
 export const ManageDashboardsNew = React.memo(({ folder }: Props) => {
+  if (config.bootData.user.isSignedIn) {
   const styles = useStyles2(getStyles);
   // since we don't use "query" from use search... it is not actually loaded from the URL!
   const { query, onQueryChange } = useSearchQuery({});
@@ -79,6 +80,9 @@ export const ManageDashboardsNew = React.memo(({ folder }: Props) => {
       />
     </>
   );
+  } else {
+    return null;
+  }
 });
 
 ManageDashboardsNew.displayName = 'ManageDashboardsNew';
