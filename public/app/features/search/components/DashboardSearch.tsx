@@ -1,52 +1,57 @@
-import { css } from '@emotion/css';
-import React, { useEffect } from 'react';
+import {css} from '@emotion/css';
+import React, {useEffect} from 'react';
+import { config } from '@grafana/runtime';
+import {GrafanaTheme2} from '@grafana/data';
+import {IconButton, stylesFactory, useStyles2} from '@grafana/ui';
 
-import { GrafanaTheme2 } from '@grafana/data';
-import { IconButton, stylesFactory, useStyles2 } from '@grafana/ui';
+import {useKeyNavigationListener} from '../hooks/useSearchKeyboardSelection';
+import {SearchView} from '../page/components/SearchView';
+import {getSearchStateManager} from '../state/SearchStateManager';
 
-import { useKeyNavigationListener } from '../hooks/useSearchKeyboardSelection';
-import { SearchView } from '../page/components/SearchView';
-import { getSearchStateManager } from '../state/SearchStateManager';
-
-export interface Props {}
+export interface Props {
+}
 
 export function DashboardSearch({}: Props) {
-  const styles = useStyles2(getStyles);
-  const stateManager = getSearchStateManager();
-  const state = stateManager.useState();
+  if (config.bootData.user.isSignedIn) {
+    const styles = useStyles2(getStyles);
+    const stateManager = getSearchStateManager();
+    const state = stateManager.useState();
 
-  useEffect(() => stateManager.initStateFromUrl(), [stateManager]);
+    useEffect(() => stateManager.initStateFromUrl(), [stateManager]);
 
-  const { onKeyDown, keyboardEvents } = useKeyNavigationListener();
+    const {onKeyDown, keyboardEvents} = useKeyNavigationListener();
 
-  return (
-    <div className={styles.overlay}>
-      <div className={styles.container}>
-        <div className={styles.searchField}>
-          <div>
-            <input
-              type="text"
-              // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus
-              placeholder={state.includePanels ? 'Search dashboards and panels by name' : 'Search dashboards by name'}
-              value={state.query ?? ''}
-              onChange={(e) => stateManager.onQueryChange(e.currentTarget.value)}
-              onKeyDown={onKeyDown}
-              spellCheck={false}
-              className={styles.input}
-            />
+    return (
+      <div className={styles.overlay}>
+        <div className={styles.container}>
+          <div className={styles.searchField}>
+            <div>
+              <input
+                type="text"
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+                placeholder={state.includePanels ? 'Search dashboards and panels by name' : 'Search dashboards by name'}
+                value={state.query ?? ''}
+                onChange={(e) => stateManager.onQueryChange(e.currentTarget.value)}
+                onKeyDown={onKeyDown}
+                spellCheck={false}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.closeBtn}>
+              <IconButton name="times" onClick={stateManager.onCloseSearch} size="xxl" tooltip="Close search"/>
+            </div>
           </div>
-
-          <div className={styles.closeBtn}>
-            <IconButton name="times" onClick={stateManager.onCloseSearch} size="xxl" tooltip="Close search" />
+          <div className={styles.search}>
+            <SearchView showManage={false} keyboardEvents={keyboardEvents}/>
           </div>
-        </div>
-        <div className={styles.search}>
-          <SearchView showManage={false} keyboardEvents={keyboardEvents} />
         </div>
       </div>
-    </div>
-  );
+    );
+  } else {
+    return null;
+  }
 }
 
 const getStyles = stylesFactory((theme: GrafanaTheme2) => {

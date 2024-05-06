@@ -51,7 +51,7 @@ export const NavBar = React.memo(() => {
     menuOpen
   );
 
-  let homeUrl = config.appSubUrl || '/';
+  let homeUrl = config.bootData.user.isSignedIn ? config.appSubUrl || '/' : '/login';
   if (!config.bootData.user.isSignedIn && !config.anonymousEnabled) {
     homeUrl = textUtil.sanitizeUrl(locationUtil.getUrlForPartial(location, { forceLogin: 'true' }));
   }

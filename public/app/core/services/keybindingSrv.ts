@@ -34,25 +34,25 @@ export class KeybindingSrv {
     Mousetrap.reset();
 
     if (this.locationService.getLocation().pathname !== '/login') {
-      this.bind(['?', 'h'], this.showHelpModal);
-      this.bind('g h', this.goToHome);
-      this.bind('g a', this.openAlerting);
-      this.bind('g p', this.goToProfile);
-      this.bind('g e', this.goToExplore);
-      if (!config.featureToggles.topNavCommandPalette) {
-        this.bind('s o', this.openSearch);
-        this.bind('f', this.openSearch);
-      }
-      this.bind('t a', this.makeAbsoluteTime);
-      this.bind('esc', this.exit);
-      this.bindGlobalEsc();
+      // this.bind(['?', 'h'], this.showHelpModal);
+      // this.bind('g h', this.goToHome);
+      // this.bind('g a', this.openAlerting);
+      // this.bind('g p', this.goToProfile);
+      // this.bind('g e', this.goToExplore);
+      // if (!config.featureToggles.topNavCommandPalette) {
+      //   this.bind('s o', this.openSearch);
+      //   this.bind('f', this.openSearch);
+      // }
+      // this.bind('t a', this.makeAbsoluteTime);
+      // this.bind('esc', this.exit);
+      //this.bindGlobalEsc();
     }
 
     this.bind('c t', () => toggleTheme(false));
     this.bind('c r', () => toggleTheme(true));
 
     if (process.env.NODE_ENV === 'development') {
-      this.bind('t n', () => this.toggleNav());
+      // this.bind('t n', () => this.toggleNav());
     }
   }
 

@@ -1,6 +1,6 @@
 import { css, cx } from '@emotion/css';
 import React, { useEffect } from 'react';
-
+import { config } from '@grafana/runtime';
 import { GrafanaTheme2 } from '@grafana/data';
 import { Input, useStyles2, Spinner } from '@grafana/ui';
 import { contextSrv } from 'app/core/services/context_srv';
@@ -17,6 +17,7 @@ export interface Props {
 }
 
 export const ManageDashboardsNew = React.memo(({ folder }: Props) => {
+  if (config.bootData.user.isSignedIn) {
   const styles = useStyles2(getStyles);
   // since we don't use "query" from use search... it is not actually loaded from the URL!
   const stateManager = getSearchStateManager();
@@ -71,6 +72,9 @@ export const ManageDashboardsNew = React.memo(({ folder }: Props) => {
       />
     </>
   );
+  } else {
+    return null;
+  }
 });
 
 ManageDashboardsNew.displayName = 'ManageDashboardsNew';
